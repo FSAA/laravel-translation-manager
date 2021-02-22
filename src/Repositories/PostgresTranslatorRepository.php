@@ -47,7 +47,7 @@ SQL
         $ltm_translations = $this->getTranslationsTableName();
 
         return $this->translation->getConnection()->update($this->adjustTranslationTable(<<<SQL
-UPDATE $ltm_translations SET is_deleted = ? WHERE is_deleted = $whereClause AND "group" = ? AND "key" LIKE BINARY ?
+UPDATE $ltm_translations SET is_deleted = ? WHERE is_deleted = $whereClause AND "group" = ? AND "key" LIKE ?
 SQL
         ), [$value, $group, $key]);
     }
@@ -55,7 +55,7 @@ SQL
     public function updateGroupKeyStatusById($group, $key, $id)
     {
         $ltm_translations = $this->getTranslationsTableName();
-        $this->translation->getConnection()->update($this->adjustTranslationTable("UPDATE $ltm_translations SET \"group\" = ?, \"key\" LIKE BINARY ?, status = 1 WHERE id = ?"), [$group, $key, $id]);
+        $this->translation->getConnection()->update($this->adjustTranslationTable("UPDATE $ltm_translations SET \"group\" = ?, \"key\" LIKE ?, status = 1 WHERE id = ?"), [$group, $key, $id]);
     }
 
     public function selectTranslationsByLocaleAndGroup($locale, $db_group)
@@ -71,7 +71,7 @@ SQL
     {
         $ltm_translations = $this->getTranslationsTableName();
         return $this->translation->getConnection()->select($this->adjustTranslationTable(<<<SQL
-SELECT source FROM $ltm_translations WHERE "group" = ? AND "key" LIKE BINARY ?
+SELECT source FROM $ltm_translations WHERE "group" = ? AND "key" LIKE ?
 SQL
         ), [$group, $key]);
     }
@@ -144,7 +144,7 @@ UNION ALL
 SELECT NULL id, 0 status, lt.locale, kt."group", kt."key", NULL "value", NULL created_at, NULL updated_at, NULL source, NULL saved_value, NULL is_deleted, NULL was_used
 FROM (SELECT DISTINCT locale FROM $ltm_translations  WHERE 1=1 $displayWhere) lt
     CROSS JOIN (SELECT DISTINCT "key", "group" FROM $ltm_translations  WHERE 1=1 $displayWhere) kt
-WHERE NOT exists(SELECT * FROM $ltm_translations  tr WHERE tr."key" LIKE BINARY kt."key" AND tr."group" = kt."group" AND tr.locale = lt.locale)
+WHERE NOT exists(SELECT * FROM $ltm_translations  tr WHERE tr."key" LIKE kt."key" AND tr."group" = kt."group" AND tr.locale = lt.locale)
       AND "key" LIKE ?
 ORDER BY "key", "group", locale 
 $limitSQL
@@ -191,7 +191,7 @@ SELECT DISTINCT
 FROM
 (SELECT * FROM (SELECT DISTINCT locale FROM $ltm_translations WHERE 1=1 $displayWhere) lcs
     CROSS JOIN (SELECT DISTINCT "group", "key" FROM $ltm_translations WHERE "group" = ? $displayWhere) grp) m
-WHERE NOT EXISTS(SELECT * FROM $ltm_translations t WHERE t.locale = m.locale AND t."group" = m."group" AND t."key" LIKE BINARY m."key")
+WHERE NOT EXISTS(SELECT * FROM $ltm_translations t WHERE t.locale = m.locale AND t."group" = m."group" AND t."key" LIKE m."key")
 ORDER BY "key" ASC
 SQL
         ), [$group, $group], $this->getTranslation()->getConnectionName());
@@ -247,10 +247,10 @@ FROM (SELECT * FROM $ltm_translations WHERE 1=1 $displayWhere) lt
                      SELECT NULL, "group", "key", locale FROM ((SELECT DISTINCT locale FROM $ltm_translations WHERE 1=1 $displayWhere) lc
                          CROSS JOIN (SELECT DISTINCT "group", "key" FROM $ltm_translations WHERE 1=1 $displayWhere) lg)
                     ) lt
-               GROUP BY "group", "key") ht ON mt."key" LIKE BINARY ht."key"
-     WHERE (mt.ru NOT LIKE BINARY ht.ru AND mt.en LIKE BINARY ht.en) OR (mt.ru LIKE BINARY ht.ru AND mt.en NOT LIKE BINARY ht.en)
+               GROUP BY "group", "key") ht ON mt."key" LIKE ht."key"
+     WHERE (mt.ru NOT LIKE ht.ru AND mt.en LIKE ht.en) OR (mt.ru LIKE ht.ru AND mt.en NOT LIKE ht.en)
     ) ft
-        ON (lt.locale = '$translatingLocale' AND lt.value LIKE BINARY ft.ru) AND lt."key" LIKE BINARY ft.key
+        ON (lt.locale = '$translatingLocale' AND lt.value LIKE ft.ru) AND lt."key" LIKE ft.key
 ORDER BY "key", "group"
 SQL
         ));
@@ -261,7 +261,7 @@ SQL
         $ltm_translations = $this->getTranslationsTableName();
         return $this->translation->getConnection()->select($this->adjustTranslationTable(<<<SQL
 SELECT GROUP_CONCAT(id SEPARATOR ',') ids FROM $ltm_translations tr
-WHERE "group" = ? AND "key" LIKE BINARY ? AND locale IN (?) AND id NOT IN ($rowIds)
+WHERE "group" = ? AND "key" LIKE ? AND locale IN (?) AND id NOT IN ($rowIds)
 
 SQL
         ), [$group, $key, $locale]);
@@ -276,7 +276,7 @@ SQL
             if ($dst === null) {
                 $rows = $this->translation->getConnection()->select($this->adjustTranslationTable($sql = <<<SQL
 SELECT DISTINCT "group", "key", locale, id, NULL dst, NULL dstgrp FROM $ltm_translations t1
-WHERE "group" = ? AND "key" LIKE BINARY ? AND locale IN ($userLocales)
+WHERE "group" = ? AND "key" LIKE ? AND locale IN ($userLocales)
 ORDER BY locale, "key"
 
 SQL
@@ -287,9 +287,9 @@ SQL
             } else {
                 $rows = $this->translation->getConnection()->select($this->adjustTranslationTable($sql = <<<SQL
 SELECT DISTINCT "group", "key", locale, id, CONCAT(SUBSTR("key", 1, CHAR_LENGTH("key")-?), ?) dst, ? dstgrp FROM $ltm_translations t1
-WHERE "group" = ? AND "key" LIKE BINARY ? AND locale IN ($userLocales)
+WHERE "group" = ? AND "key" LIKE ? AND locale IN ($userLocales)
 AND NOT exists(SELECT * FROM $ltm_translations t2 WHERE t2.value IS NOT NULL AND t2."group" = ? AND t1.locale = t2.locale
-                AND t2."key" LIKE BINARY CONCAT(SUBSTR(t1."key", 1, CHAR_LENGTH(t1."key")-?), ?))
+                AND t2."key" LIKE CONCAT(SUBSTR(t1."key", 1, CHAR_LENGTH(t1."key")-?), ?))
 ORDER BY locale, "key"
 
 SQL
@@ -308,7 +308,7 @@ SQL
             if ($dst === null) {
                 $rows = $this->translation->getConnection()->select($this->adjustTranslationTable($sql = <<<SQL
 SELECT DISTINCT "group", "key", locale, id, NULL dst, NULL dstgrp FROM $ltm_translations t1
-WHERE "group" = ? AND "key" LIKE BINARY ? AND locale IN ($userLocales)
+WHERE "group" = ? AND "key" LIKE ? AND locale IN ($userLocales)
 ORDER BY locale, "key"
 
 SQL
@@ -319,9 +319,9 @@ SQL
             } else {
                 $rows = $this->translation->getConnection()->select($this->adjustTranslationTable($sql = <<<SQL
 SELECT DISTINCT "group", "key", locale, id, CONCAT(?, SUBSTR("key", ?+1, CHAR_LENGTH("key")-?)) dst, ? dstgrp FROM $ltm_translations t1
-WHERE "group" = ? AND "key" LIKE BINARY ? AND locale IN ($userLocales)
+WHERE "group" = ? AND "key" LIKE ? AND locale IN ($userLocales)
 AND NOT exists(SELECT * FROM $ltm_translations t2 WHERE t2.value IS NOT NULL AND t2."group" = ? AND t1.locale = t2.locale
-                AND t2."key" LIKE BINARY CONCAT(?, SUBSTR(t1."key", ?+1, CHAR_LENGTH(t1."key")-?)))
+                AND t2."key" LIKE CONCAT(?, SUBSTR(t1."key", ?+1, CHAR_LENGTH(t1."key")-?)))
 ORDER BY locale, "key"
 
 SQL
@@ -342,7 +342,7 @@ SQL
             if ($dst === null) {
                 $rows = $this->translation->getConnection()->select($this->adjustTranslationTable($sql = <<<SQL
 SELECT DISTINCT "group", "key", locale, id, NULL dst, NULL dstgrp FROM $ltm_translations t1
-WHERE "group" = ? AND "key" LIKE BINARY ? AND locale IN ($userLocales)
+WHERE "group" = ? AND "key" LIKE ? AND locale IN ($userLocales)
 ORDER BY locale, "key"
 
 SQL
@@ -353,7 +353,7 @@ SQL
             } else {
                 $rows = $this->translation->getConnection()->select($this->adjustTranslationTable($sql = <<<SQL
 SELECT DISTINCT "group", "key", locale, id, ? dst, ? dstgrp FROM $ltm_translations t1
-WHERE "group" = ? AND "key" LIKE BINARY ? AND locale IN ($userLocales)
+WHERE "group" = ? AND "key" LIKE ? AND locale IN ($userLocales)
 AND NOT exists(SELECT * FROM $ltm_translations t2 WHERE t2.value IS NOT NULL AND t2."group" = ? AND t1.locale = t2.locale AND t2."key" LIKE ?)
 ORDER BY locale, "key"
 
