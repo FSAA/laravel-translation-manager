@@ -115,18 +115,18 @@ SQL
         if ($group) {
             if ($locale) {
                 $this->translation->getConnection()->affectingStatement($this->adjustTranslationTable(<<<SQL
-UPDATE $ltm_translations SET saved_value = "value", status = ?, is_auto_added = 0 WHERE (ifnull(saved_value,'') <> ifnull("value",'') || (status <> ? and status <> ?)) AND "group" = ? AND locale = ?
+UPDATE $ltm_translations SET saved_value = "value", status = ?, is_auto_added = 0 WHERE (COALESCE(saved_value,'') <> COALESCE("value",'') || (status <> ? and status <> ?)) AND "group" = ? AND locale = ?
 SQL
                 ), [$newStatus, $newStatus, Translation::STATUS_SAVED, $group, $locale]);
             } else {
                 $this->translation->getConnection()->affectingStatement($this->adjustTranslationTable(<<<SQL
-UPDATE $ltm_translations SET saved_value = "value", status = ?, is_auto_added = 0 WHERE (ifnull(saved_value,'') <> ifnull("value",'') || (status <> ? and status <> ?)) AND "group" = ?
+UPDATE $ltm_translations SET saved_value = "value", status = ?, is_auto_added = 0 WHERE (COALESCE(saved_value,'') <> COALESCE("value",'') || (status <> ? and status <> ?)) AND "group" = ?
 SQL
                 ), [$newStatus, $newStatus, Translation::STATUS_SAVED, $group]);
             }
         } else {
             $this->translation->getConnection()->affectingStatement($this->adjustTranslationTable(<<<SQL
-UPDATE $ltm_translations SET saved_value = "value", status = ?, is_auto_added = 0 WHERE (ifnull(saved_value,'') <> ifnull("value",'') || (status <> ? and status <> ?))
+UPDATE $ltm_translations SET saved_value = "value", status = ?, is_auto_added = 0 WHERE (COALESCE(saved_value,'') <> COALESCE("value",'') || (status <> ? and status <> ?))
 SQL
             ), [$newStatus, $newStatus, Translation::STATUS_SAVED]);
         }
